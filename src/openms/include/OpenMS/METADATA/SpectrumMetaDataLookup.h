@@ -290,6 +290,24 @@ namespace OpenMS
       bool override_spectra_references = false, 
       std::vector<ProteinIdentification> proteins = std::vector<ProteinIdentification>());
 
+
+    /**
+     * @brief Adds missing ion mobility information to peptide identifications.
+     * 
+     * This function adds missing ion mobility (IM) information to the peptide identifications in the given vector.
+     * The missing IM information is retrieved from the specified file.
+     * 
+     * @param peptides The vector of peptide identifications to update.
+     * @param filename The name of the file containing the missing IM information.
+     * @param stop_on_error If set to true, the function will stop and throw an exception if an error occurs while retrieving the IM information.
+     *                      If set to false, the function will continue processing the remaining peptide identifications even if an error occurs.
+     * 
+     * @return True if all missing IM information was successfully added to the peptide identifications, false otherwise.
+	*/
+    static bool addMissingIMToPeptideIDs(std::vector<PeptideIdentification>& peptides,
+      const String& filename,
+      bool stop_on_error);
+
   protected:
 
     std::vector<SpectrumMetaData> metadata_; ///< Meta data for spectra
