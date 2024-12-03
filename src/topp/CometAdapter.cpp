@@ -18,6 +18,7 @@
 #include <OpenMS/FORMAT/HANDLERS/IndexedMzMLDecoder.h>
 #include <OpenMS/FORMAT/DATAACCESS/MSDataWritingConsumer.h>
 #include <OpenMS/METADATA/SpectrumMetaDataLookup.h>
+#include <OpenMS/METADATA/PeptideIdentification.h>
 #include <OpenMS/CHEMISTRY/ModificationsDB.h>
 #include <OpenMS/CHEMISTRY/ProteaseDB.h>
 #include <OpenMS/CHEMISTRY/ResidueDB.h>
@@ -752,8 +753,8 @@ protected:
     // if "reindex" parameter is set to true will perform reindexing
     if (auto ret = reindex_(protein_identifications, peptide_identifications); ret != EXECUTION_OK) return ret;
 
-	// Parse IM information
- 	SpectrumMetaDataLookup::addMissingIMToPeptideIDs(peptide_identifications, inputfile_name, true);
+	// Parse IM information if present
+ 	SpectrumMetaDataLookup::addMissingIMToPeptideIDs(peptide_identifications, exp);
 
     // add percolator features
     StringList feature_set;

@@ -270,6 +270,20 @@ namespace OpenMS
       bool stop_on_error = false);
 
     /**
+     * @brief Adds missing ion mobility information to peptide identifications.
+     * 
+     * This function adds missing ion mobility (IM) information to the peptide identifications.
+     * The missing IM information is retrieved from the MSExperiment.
+     * 
+     * @param peptides The vector of peptide identifications to update.
+     * @param exp The MSExperiment object representing the raw data file (e.g., mzML) used to look up IM values.
+     * 
+     * @return True if all missing IM information was successfully added to the peptide identifications, false otherwise.
+    */
+    static bool addMissingIMToPeptideIDs(std::vector<PeptideIdentification>& peptides,
+    									const MSExperiment& exp);
+
+    /**
      * @brief Add missing "spectrum_reference"s to peptide identifications based on raw data
      *
      * @param peptides Peptide IDs with or without spectrum_reference
@@ -291,22 +305,6 @@ namespace OpenMS
       std::vector<ProteinIdentification> proteins = std::vector<ProteinIdentification>());
 
 
-    /**
-     * @brief Adds missing ion mobility information to peptide identifications.
-     * 
-     * This function adds missing ion mobility (IM) information to the peptide identifications in the given vector.
-     * The missing IM information is retrieved from the specified file.
-     * 
-     * @param peptides The vector of peptide identifications to update.
-     * @param filename The name of the file containing the missing IM information.
-     * @param stop_on_error If set to true, the function will stop and throw an exception if an error occurs while retrieving the IM information.
-     *                      If set to false, the function will continue processing the remaining peptide identifications even if an error occurs.
-     * 
-     * @return True if all missing IM information was successfully added to the peptide identifications, false otherwise.
-	*/
-    static bool addMissingIMToPeptideIDs(std::vector<PeptideIdentification>& peptides,
-      const String& filename,
-      bool stop_on_error);
 
   protected:
 
