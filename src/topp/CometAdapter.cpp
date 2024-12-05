@@ -695,7 +695,8 @@ protected:
       input_file_with_index = tmp_file;
     }
 
-    mzml_file.getOptions().setMetadataOnly(false);
+    mzml_file.getOptions().setMetadataOnly(true);
+	mzml_file.getOptions().addMSLevel(2);
     mzml_file.load(inputfile_name, exp); // always load metadata for raw file name
 
     //-------------------------------------------------------------
