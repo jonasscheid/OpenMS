@@ -7,6 +7,7 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/METADATA/SpectrumMetaDataLookup.h>
+#include <OpenMS/IONMOBILITY/IMTypes.h>
 
 using namespace std;
 
@@ -191,6 +192,10 @@ namespace OpenMS
   bool SpectrumMetaDataLookup::addMissingIMToPeptideIDs(vector<PeptideIdentification>& peptides,
                                 const MSExperiment& exp)
   {
+	if (IMTypes::determineIMFormat(exp) != IMFormat::MULTIPLE_SPECTRA)
+	{
+	  return false;
+	}
     SpectrumLookup lookup;
     bool success = true;
     lookup.readSpectra(exp.getSpectra());
@@ -201,18 +206,9 @@ namespace OpenMS
       String native_id = pep.getSpectrumReference();
       Size index = lookup.findByNativeID(native_id);
       float drift_time = exp.getSpectra()[index].getDriftTime();
-      if (drift_time > 0.0)
-      {
+
       pep.setMetaValue(Constants::UserParam::IM, drift_time);
-	  } 
-	  else 
-	  {
-      // Handle invalid drift time appropriately, possibly log a warning
-	  OPENMS_LOG_ERROR << "Error: Could not set precursor IM for spectrum with native ID '" + native_id + "' - precursor spectrum not found." << endl;
-	  }
     }
-	// Define the IM unit
-    //exp.getProteinIdentifications()[0].setMetaValue(Constants::UserParam::IM, exp[0].getDriftTimeUnitAsString());
     return success;
   }
 

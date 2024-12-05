@@ -1278,9 +1278,6 @@ std::vector<MSChromatogram> extractXICs(
     /// Are all MSSpectra in this experiment part of an IM Frame? I.e. they all have the same RT, but different drift times
     bool isIMFrame() const;
 
-	// Check if there are any MS2 spectra with ion mobility data
-	bool hasIM() const;
-
   protected:
     /// MS levels of the data
     std::vector<UInt> ms_levels_;
