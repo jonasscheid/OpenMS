@@ -18,6 +18,7 @@
 #include <OpenMS/FORMAT/HANDLERS/IndexedMzMLDecoder.h>
 #include <OpenMS/FORMAT/DATAACCESS/MSDataWritingConsumer.h>
 #include <OpenMS/METADATA/SpectrumMetaDataLookup.h>
+#include <OpenMS/KERNEL/MSSpectrum.h>
 #include <OpenMS/METADATA/PeptideIdentification.h>
 #include <OpenMS/CHEMISTRY/ModificationsDB.h>
 #include <OpenMS/CHEMISTRY/ProteaseDB.h>
@@ -694,7 +695,7 @@ protected:
       input_file_with_index = tmp_file;
     }
 
-    mzml_file.getOptions().setMetadataOnly(true);
+    mzml_file.getOptions().setMetadataOnly(false);
     mzml_file.load(inputfile_name, exp); // always load metadata for raw file name
 
     //-------------------------------------------------------------
@@ -754,7 +755,13 @@ protected:
     if (auto ret = reindex_(protein_identifications, peptide_identifications); ret != EXECUTION_OK) return ret;
 
 	// Parse IM information if present
- 	SpectrumMetaDataLookup::addMissingIMToPeptideIDs(peptide_identifications, exp);
+	if (exp.hasIM())
+	{
+	  // IM information is always present in MS2 spectra
+	  first_ms2 = exp.getFirstProductSpectrum(0)
+      protein_identifications[0].setMetaValue(Constants::UserParam::IM, exp[first_ms2].getDriftTimeUnitAsString());
+ 	  SpectrumMetaDataLookup::addMissingIMToPeptideIDs(peptide_identifications, exp);
+	}
 
     // add percolator features
     StringList feature_set;

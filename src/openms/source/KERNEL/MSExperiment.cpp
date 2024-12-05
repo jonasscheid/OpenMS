@@ -875,6 +875,18 @@ namespace OpenMS
     return true; // RT stable, IM changing
   }
 
+  bool MSExperiment::hasIM() const
+  {
+	for (const auto& spec : getSpectra())
+	{
+	  if ((spec.getMSLevel() == 2) && (spec.getDriftTime() != 0.0))
+	  {
+		return true;
+	  }
+	}
+	return false;
+  }
+
   MSExperiment::SpectrumType* MSExperiment::createSpec_(PeakType::CoordinateType rt)
   {
     spectra_.emplace_back(SpectrumType());
