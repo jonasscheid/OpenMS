@@ -11,6 +11,7 @@
 
 ///////////////////////////
 #include <OpenMS/METADATA/SpectrumMetaDataLookup.h>
+#include <OpenMS/IONMOBILITY/IMTypes.h>
 ///////////////////////////
 
 using namespace OpenMS;
@@ -158,6 +159,44 @@ START_SECTION((bool addMissingRTsToPeptideIDs(vector<PeptideIdentification>& pep
   SpectrumMetaDataLookup::addMissingRTsToPeptideIDs(peptides, filename);
   TEST_EQUAL(peptides[0].getRT(), 1.0); // this doesn't get overwritten
   TEST_REAL_SIMILAR(peptides[1].getRT(), 5.3);
+}
+END_SECTION
+
+
+START_SECTION((bool addMissingIMToPeptideIDs(vector<PeptideIdentification>& peptides, const MSExperiment& exp)))
+{
+  // Test 1: Empty MSExperiment
+  vector<PeptideIdentification> peptides(1);
+  peptides[0].setSpectrumReference("index=0");
+  MSExperiment exp_empty;
+  TEST_EQUAL(SpectrumMetaDataLookup::addMissingIMToPeptideIDs(peptides, exp_empty), false);
+
+  // Test 2: MSExperiment with no IM format (not MULTIPLE_SPECTRA)
+  MSExperiment exp_no_im;
+  MSSpectrum spectrum_no_im;
+  spectrum_no_im.setNativeID("index=0");
+  exp_no_im.addSpectrum(spectrum_no_im);
+  TEST_EQUAL(SpectrumMetaDataLookup::addMissingIMToPeptideIDs(peptides, exp_no_im), false);
+
+  // Test 3: MSExperiment with valid IM values
+  MSExperiment exp_valid;
+  MSSpectrum spectrum1, spectrum2;
+  spectrum1.setNativeID("index=0");
+  spectrum1.setDriftTime(2.5);
+  spectrum2.setNativeID("index=2");
+  spectrum2.setDriftTime(5.3);
+  exp_valid.addSpectrum(spectrum1);
+  exp_valid.addSpectrum(spectrum2);
+
+  peptides.resize(2);
+  peptides[0].setSpectrumReference("index=0");
+  peptides[1].setSpectrumReference("index=2");
+
+  TEST_EQUAL(SpectrumMetaDataLookup::addMissingIMToPeptideIDs(peptides, exp_valid), true);
+
+  // Verify peptide annotations
+  TEST_REAL_SIMILAR(peptides[0].getMetaValue(Constants::UserParam::IM), 2.5);
+  TEST_REAL_SIMILAR(peptides[1].getMetaValue(Constants::UserParam::IM), 5.3);
 }
 END_SECTION
 
