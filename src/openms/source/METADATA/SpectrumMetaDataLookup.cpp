@@ -194,13 +194,14 @@ namespace OpenMS
   {
 	if (IMTypes::determineIMFormat(exp) != IMFormat::MULTIPLE_SPECTRA)
 	{
+	  // Print IMType to console
+	  OPENMS_LOG_INFO << "Could not detect IM values in spectrum file. Skipping.." << endl;
 	  return false;
 	}
     SpectrumLookup lookup;
     bool success = true;
     lookup.readSpectra(exp.getSpectra());
-
-    // Iterate over peptide_ids and annotate IM value if possible
+    // Iterate over peptide_ids and annotate IM values stored in MSExperiment
     for (auto& pep : peptides)
     {
       String native_id = pep.getSpectrumReference();

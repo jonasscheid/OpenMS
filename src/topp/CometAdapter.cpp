@@ -695,9 +695,13 @@ protected:
       input_file_with_index = tmp_file;
     }
 
-    mzml_file.getOptions().setMetadataOnly(true);
+	// Load spectra metadata to map to idXML
+    mzml_file.getOptions().setMetadataOnly(false);
+	mzml_file.getOptions().setFillData(false);
+	mzml_file.getOptions().clearMSLevels();
+	// Ion mobility data is currently stored in MS2
 	mzml_file.getOptions().addMSLevel(2);
-    mzml_file.load(inputfile_name, exp); // always load metadata for raw file name
+    mzml_file.load(inputfile_name, exp);
 
     //-------------------------------------------------------------
     // calculations
@@ -755,8 +759,11 @@ protected:
     // if "reindex" parameter is set to true will perform reindexing
     if (auto ret = reindex_(protein_identifications, peptide_identifications); ret != EXECUTION_OK) return ret;
 
-	// Parse IM information if present
-	SpectrumMetaDataLookup::addMissingIMToPeptideIDs(peptide_identifications, exp);
+	// Parse ion mobility information if present
+	bool has_im = SpectrumMetaDataLookup::addMissingIMToPeptideIDs(peptide_identifications, exp);
+	if (has_im) {
+		protein_identifications[0].setMetaValue(Constants::UserParam::IM, exp.getSpectrum(0).getDriftTimeUnitAsString());
+	}
 
     // add percolator features
     StringList feature_set;
