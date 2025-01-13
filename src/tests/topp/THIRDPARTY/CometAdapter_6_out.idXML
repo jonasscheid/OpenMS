@@ -4,8 +4,8 @@
 	<SearchParameters id="SP_0" db="/mnt/volume/OpenMS/src/tests/topp/THIRDPARTY/CometAdapter_3.fasta" db_version="" taxonomy="" mass_type="monoisotopic" charges="0:0" enzyme="unspecific cleavage" missed_cleavages="1" precursor_peak_tolerance="20" precursor_peak_tolerance_ppm="true" peak_mass_tolerance="0.01" peak_mass_tolerance_ppm="false" >
 		<FixedModification name="Carbamidomethyl (C)" />
 		<VariableModification name="Oxidation (M)" />
-				<UserParam type="string" name="CometAdapter:1:in" value="/mnt/volume/OpenMS/src/tests/topp/THIRDPARTY/CometAdapter_5_in.mzML"/>
-				<UserParam type="string" name="CometAdapter:1:out" value="CometAdapter_5_out1.tmp.idXML"/>
+				<UserParam type="string" name="CometAdapter:1:in" value="/mnt/volume/OpenMS/src/tests/topp/THIRDPARTY/CometAdapter_6_in.mzML"/>
+				<UserParam type="string" name="CometAdapter:1:out" value="CometAdapter_6_out1.tmp.idXML"/>
 				<UserParam type="string" name="CometAdapter:1:database" value="/mnt/volume/OpenMS/src/tests/topp/THIRDPARTY/CometAdapter_3.fasta"/>
 				<UserParam type="string" name="CometAdapter:1:comet_executable" value="/mnt/volume/OpenMS/THIRDPARTY/Linux/64bit/Comet/comet.exe"/>
 				<UserParam type="string" name="CometAdapter:1:pin_out" value=""/>
@@ -79,7 +79,7 @@
 			<ProteinHit id="PH_0" accession="DECOY_sp|P61313|RL15_HUMAN" score="0.0" sequence="" >
 				<UserParam type="string" name="target_decoy" value="decoy"/>
 			</ProteinHit>
-			<UserParam type="stringList" name="spectra_data" value="[/mnt/volume/OpenMS/src/tests/topp/THIRDPARTY/CometAdapter_5_in.mzML]"/>
+			<UserParam type="stringList" name="spectra_data" value="[/mnt/volume/OpenMS/src/tests/topp/THIRDPARTY/CometAdapter_6_in.mzML]"/>
 			<UserParam type="string" name="IM" value="1/K0"/>
 		</ProteinIdentification>
 		<PeptideIdentification score_type="expect" higher_score_better="false" significance_threshold="0.0" MZ="577.819547531899957" RT="0.9" spectrum_reference="index=7" >

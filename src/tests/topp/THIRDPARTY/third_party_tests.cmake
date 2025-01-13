@@ -168,9 +168,9 @@ if (NOT (${COMET_BINARY} STREQUAL "COMET_BINARY-NOTFOUND"))
   add_test("TOPP_CometAdapter_4_out1" ${DIFF} -in1 CometAdapter_4_out1.tmp.idXML -in2 ${DATA_DIR_TOPP}/THIRDPARTY/CometAdapter_4_out.idXML -ratio 1.02 -whitelist "search_engine_version" "IdentificationRun date" "spectra_data" "SearchParameters id=\"SP_0\" db=" "UserParam type=\"string\" name=\"CometAdapter:1:")
   set_tests_properties("TOPP_CometAdapter_4_out1" PROPERTIES DEPENDS "TOPP_CometAdapter_4")
   ### Test if ion mobility values are properly parsed
-  add_test("TOPP_CometAdapter_5"  ${TOPP_BIN_PATH}/CometAdapter -test -in ${DATA_DIR_TOPP}/THIRDPARTY/CometAdapter_5_in.mzML -out CometAdapter_5_out1.tmp.idXML -database ${DATA_DIR_TOPP}/THIRDPARTY/CometAdapter_3.fasta -enzyme "unspecific cleavage" -precursor_mass_tolerance 20 -comet_executable "${COMET_BINARY}")
-  add_test("TOPP_CometAdapter_5_out1" ${DIFF} -in1 CometAdapter_5_out1.tmp.idXML -in2 ${DATA_DIR_TOPP}/THIRDPARTY/CometAdapter_5_out.idXML -whitelist "search_engine_version" "IdentificationRun date" "spectra_data" "SearchParameters id=\"SP_0\" db=" "UserParam type=\"string\" name=\"CometAdapter:1:" "UserParam type=\"string\" name=\"CometAdapter:1:database\" value=" "UserParam type=\"string\" name=\"CometAdapter:1:comet_executable\" value=")
-  set_tests_properties("TOPP_CometAdapter_5_out1" PROPERTIES DEPENDS "TOPP_CometAdapter_5")
+  add_test("TOPP_CometAdapter_6"  ${TOPP_BIN_PATH}/CometAdapter -test -in ${DATA_DIR_TOPP}/THIRDPARTY/CometAdapter_6_in.mzML -out CometAdapter_6_out1.tmp.idXML -database ${DATA_DIR_TOPP}/THIRDPARTY/CometAdapter_3.fasta -enzyme "unspecific cleavage" -precursor_mass_tolerance 20 -comet_executable "${COMET_BINARY}")
+  add_test("TOPP_CometAdapter_6_out1" ${DIFF} -in1 CometAdapter_6_out1.tmp.idXML -in2 ${DATA_DIR_TOPP}/THIRDPARTY/CometAdapter_6_out.idXML -whitelist "search_engine_version" "IdentificationRun date" "spectra_data" "SearchParameters id=\"SP_0\" db=" "UserParam type=\"string\" name=\"CometAdapter:1:" "UserParam type=\"string\" name=\"CometAdapter:1:database\" value=" "UserParam type=\"string\" name=\"CometAdapter:1:comet_executable\" value=")
+  set_tests_properties("TOPP_CometAdapter_6_out1" PROPERTIES DEPENDS "TOPP_CometAdapter_6")
 
   ## MS2 profile spectra are not allowed
   add_test("TOPP_CometAdapter_PROFILE" ${TOPP_BIN_PATH}/CometAdapter -test -database ${DATA_DIR_TOPP}/THIRDPARTY/proteinslong.fasta -in ${DATA_DIR_TOPP}/THIRDPARTY/MS2_profile.mzML -out CometAdapter_out.tmp.idXML -comet_executable "${COMET_BINARY}")
