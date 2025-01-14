@@ -192,10 +192,16 @@ bool SpectrumMetaDataLookup::addMissingRTsToPeptideIDs(vector<PeptideIdentificat
 
   bool SpectrumMetaDataLookup::addMissingIMToPeptideIDs(vector<PeptideIdentification>& peptides,
                                 const MSExperiment& exp)
-  {
+  { 
+    // Check if the experiment has spectra
+    if (exp.getSpectra().empty())
+    {
+        OPENMS_LOG_INFO << "No spectra found in the experiment. Skipping IM annotation." << endl;
+        return false;
+    }
+    // Check if desired IM format is present
 	if (IMTypes::determineIMFormat(exp) != IMFormat::MULTIPLE_SPECTRA)
 	{
-	  // Print IMType to console
 	  OPENMS_LOG_INFO << "Could not detect IM values in spectrum file. Skipping.." << endl;
 	  return false;
 	}
