@@ -199,25 +199,27 @@ bool SpectrumMetaDataLookup::addMissingRTsToPeptideIDs(vector<PeptideIdentificat
         OPENMS_LOG_INFO << "No spectra found in the experiment. Skipping IM annotation." << endl;
         return false;
     }
-    // Check if desired IM format is present
-	if (IMTypes::determineIMFormat(exp) != IMFormat::MULTIPLE_SPECTRA)
-	{
-	  OPENMS_LOG_INFO << "Could not detect IM values in spectrum file. Skipping.." << endl;
-	  return false;
-	}
     SpectrumLookup lookup;
-    bool success = true;
+    bool all_ids_have_im = true;
     lookup.readSpectra(exp.getSpectra());
     // Iterate over peptide_ids and annotate IM values stored in MSExperiment
     for (auto& pep : peptides)
     {
       String native_id = pep.getSpectrumReference();
       Size index = lookup.findByNativeID(native_id);
-      float drift_time = exp.getSpectra()[index].getDriftTime();
+      const MSSpectrum& spec =  exp.getSpectra()[index];
+      // Check if desired IM format is present
+	  if (IMTypes::determineIMFormat(spec) == IMFormat::MULTIPLE_SPECTRA)
+	  {
+        pep.setMetaValue(Constants::UserParam::IM, spec.getDriftTime());
+	  }
+	  else
+	  {
+		all_ids_have_im = false;
+	  }
 
-      pep.setMetaValue(Constants::UserParam::IM, drift_time);
     }
-    return success;
+    return all_ids_have_im;
   }
 
   bool SpectrumMetaDataLookup::addMissingSpectrumReferences(vector<PeptideIdentification>& peptides, const String& filename,

@@ -761,8 +761,8 @@ protected:
     if (auto ret = reindex_(protein_identifications, peptide_identifications); ret != EXECUTION_OK) return ret;
 
 	// Parse ion mobility information if present
-	bool has_im = SpectrumMetaDataLookup::addMissingIMToPeptideIDs(peptide_identifications, exp);
-	if (has_im) {
+	bool all_ids_have_im = SpectrumMetaDataLookup::addMissingIMToPeptideIDs(peptide_identifications, exp);
+	if (all_ids_have_im) {
 		protein_identifications[0].setMetaValue(Constants::UserParam::IM, exp.getSpectrum(0).getDriftTimeUnitAsString());
 	}
 
