@@ -1082,8 +1082,7 @@ bool ConsensusMapArrowIO::exportToParquet(
   const String& directory,
   const ParquetWriteConfig& config)
 {
-  // Mirror XMLHandler::checkUniqueIdentifiers_ — fail before any file is opened
-  // so we never leave a partial .consensusparquet behind. Throws Exception::InvalidValue.
+  // XML-lane parity: reject duplicate ProtID identifiers before any Arrow allocation.
   ProteinIdentificationArrowIO::checkUniqueIdentifiers(cmap.getProteinIdentifications());
 
   // 1. Create output directory
@@ -1421,14 +1420,11 @@ bool ConsensusMapArrowIO::importFromParquet(
     return false;
   }
 
-  // 4. Synthesize fresh ProtID identifiers + apply rename to every pep_id collection
-  //    we own (per-consensus-feature + unassigned). Mirrors IdXMLFile.cpp:530 — the
-  //    stored identifier becomes informational; the in-memory identifier downstream
-  //    sees is freshly synthesized with a UniqueIdGenerator suffix.
+  // 4. XML-lane parity: re-stamp ProtIDs with synthesized identifiers and
+  //    apply the rename to per-consensus-feature and unassigned pep_id collections.
   {
-    auto& prot_ids = cmap.getProteinIdentifications();
-    auto rename = ProteinIdentificationArrowIO::synthesizeRunIdentifiers(prot_ids);
-
+    auto rename = ProteinIdentificationArrowIO::synthesizeRunIdentifiers(
+        cmap.getProteinIdentifications());
     for (auto& cf : cmap)
     {
       ProteinIdentificationArrowIO::applyRunIdentifierRename(

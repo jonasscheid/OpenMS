@@ -1767,27 +1767,25 @@ std::map<String, String> ProteinIdentificationArrowIO::synthesizeRunIdentifiers(
   std::vector<ProteinIdentification>& protein_identifications)
 {
   std::map<String, String> rename;
-  for (auto& prot_id : protein_identifications)
+  for (size_t i = 0; i < protein_identifications.size(); ++i)
   {
-    // Mirror IdXMLFile.cpp:530 — `<search_engine>_<date>_<UniqueIdGenerator>`.
+    auto& prot_id = protein_identifications[i];
     const String se = prot_id.getSearchEngine().empty() ? String("unknown") : prot_id.getSearchEngine();
-    const String dt = prot_id.getDateTime().isValid()
-                          ? prot_id.getDateTime().toString()
-                          : String("1900-01-01T00:00:00");
+    const String dt = prot_id.getDateTime().isValid() ? prot_id.getDateTime().toString()
+                                                       : String("1900-01-01T00:00:00");
     const String stored = prot_id.getIdentifier();
     const String synthesized = se + "_" + dt + "_" + String(UniqueIdGenerator::getUniqueId());
 
-    // Multiple ProtIDs sharing the stored identifier each get their own distinct
-    // synthesized identifier; the rename map collapses to the last-seen entry
-    // (matches XML-lane behavior should pre-fix files reach the loader). One
-    // ProtID ends up orphaned of its pep_ids; warn once per collision so the
-    // upstream data corruption is visible.
     auto existing = rename.find(stored);
     if (existing != rename.end())
     {
-      OPENMS_LOG_WARN << "ProteinIdentificationArrowIO: multiple ProtIDs share stored identifier '"
-                      << stored << "'; pep_id assignment ambiguity resolved by load order — "
-                      << "regenerate input from a fixed-code build to eliminate." << std::endl;
+      // Collision: each colliding ProtID still gets its own synth, but the rename
+      // map can only point pep_ids at one of them. Last-seen wins; the prior
+      // ProtID is orphaned. Log enough context to identify the orphan.
+      OPENMS_LOG_WARN << "ProteinIdentificationArrowIO: ProtID #" << i
+                      << " (search_engine='" << prot_id.getSearchEngine() << "') shares stored identifier '"
+                      << stored << "' with a prior ProtID; pep_ids re-stamp to this one (prior ProtID orphaned)."
+                      << std::endl;
       existing->second = synthesized;
     }
     else
@@ -1807,29 +1805,24 @@ void ProteinIdentificationArrowIO::applyRunIdentifierRename(
   for (auto& pid : pep_ids)
   {
     auto it = rename.find(pid.getIdentifier());
-    if (it != rename.end())
-    {
-      pid.setIdentifier(it->second);
-    }
-    // Orphan pep_ids (no matching ProtID identifier) keep their stored identifier —
-    // same as the XML lane, where they organically surface upstream-corruption signals.
+    if (it != rename.end()) { pid.setIdentifier(it->second); }
   }
 }
 
 void ProteinIdentificationArrowIO::checkUniqueIdentifiers(
   const std::vector<ProteinIdentification>& protein_identifications)
 {
-  // Mirror XMLHandler::checkUniqueIdentifiers_ exactly — identical message text
-  // so log-grepping finds both lanes.
-  std::set<String> s;
+  // Mirror XMLHandler::checkUniqueIdentifiers_ — same exception type (ParseError)
+  // and message text so log-grepping for the canonical text finds both lanes.
+  std::set<String> seen;
   for (const auto& p : protein_identifications)
   {
-    if (s.insert(p.getIdentifier()).second == false)
+    if (!seen.insert(p.getIdentifier()).second)
     {
-      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+      throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+        p.getIdentifier(),
         "ProteinIdentification run identifiers are not unique. This can lead to "
-        "loss of unique PeptideIdentification assignment. Duplicated Protein-ID is:",
-        p.getIdentifier());
+        "loss of unique PeptideIdentification assignment. Duplicated Protein-ID is:" + p.getIdentifier());
     }
   }
 }

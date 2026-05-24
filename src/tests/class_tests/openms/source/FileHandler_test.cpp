@@ -355,9 +355,7 @@ START_SECTION(([EXTRA] storeIdentifications_loadIdentifications_idparquet_round_
   TEST_EQUAL(prot_ids_in.size(), 1);
   TEST_EQUAL(pep_ids_in.size(), 1);
 
-  // Verify key fields actually round-trip rather than just counting containers.
-  // Identifier is synthesized on load per IdXMLFile.cpp:530 parity; stored "run_1"
-  // becomes `<search_engine>_<date>_<UniqueIdGenerator>`. Pep_ids re-stamp in lock-step.
+  // Identifier synthesized on load (XML-lane parity); pep_id re-stamps in lock-step.
   TEST_NOT_EQUAL(prot_ids_in[0].getIdentifier(), "");
   TEST_NOT_EQUAL(prot_ids_in[0].getIdentifier(), "run_1");
   TEST_STRING_EQUAL(prot_ids_in[0].getScoreType(), "score");
@@ -425,8 +423,7 @@ START_SECTION(([EXTRA] storeFeatures_loadFeatures_featureparquet_round_trip))
   TEST_EQUAL(fm_in[0].getCharge(), 2);
   TEST_REAL_SIMILAR(fm_in[0].getOverallQuality(), 0.9f);
 
-  // ID sidecar round-trip — identifier is synthesized on load (IdXMLFile.cpp:530
-  // parity); pep_ids re-stamp in lock-step.
+  // ID sidecar: identifier synthesized on load (XML-lane parity); pep_id re-stamps.
   TEST_EQUAL(fm_in.getProteinIdentifications().size(), 1);
   TEST_NOT_EQUAL(fm_in.getProteinIdentifications()[0].getIdentifier(), "");
   TEST_NOT_EQUAL(fm_in.getProteinIdentifications()[0].getIdentifier(), "run_1");
@@ -518,10 +515,9 @@ START_SECTION(([EXTRA] consensusparquet_round_trip_ProteomicsLFQ_real_output))
   };
   TEST_EQUAL(handles_per_map(cmap_in) == handles_per_map(cmap_ref), true);
 
-  // ---- Run references: every PeptideIdentification points to a known run ----
-  // Both lanes synthesize fresh identifiers on load (IdXMLFile.cpp:530 parity);
-  // identifier SUFFIXES differ between lanes by design, but each lane is internally
-  // consistent (no dangling pep_id->prot_id references) and the set sizes match.
+  // ---- Run references: every pep_id points to a known run ----
+  // Both lanes synthesize on load with non-deterministic suffixes; assert the
+  // set sizes match (cardinality) and check internal consistency below.
   std::set<String> run_ids_ref, run_ids_in;
   for (const auto& p : cmap_ref.getProteinIdentifications()) run_ids_ref.insert(p.getIdentifier());
   for (const auto& p : cmap_in.getProteinIdentifications()) run_ids_in.insert(p.getIdentifier());
@@ -544,8 +540,7 @@ START_SECTION(([EXTRA] consensusparquet_round_trip_ProteomicsLFQ_real_output))
   // ---- ProteinIdentification (run-level) round-trip ----
   const auto& prot_ref = cmap_ref.getProteinIdentifications()[0];
   const auto& prot_in  = cmap_in.getProteinIdentifications()[0];
-  // Identifier prefix (search_engine_date) must match; the UniqueIdGenerator
-  // suffix differs between lanes by design.
+  // Prefix matches (search engine); UniqueIdGenerator suffix differs between lanes.
   TEST_EQUAL(prot_in.getIdentifier().hasPrefix("OMSSA_"), true);
   TEST_EQUAL(prot_ref.getIdentifier().hasPrefix("OMSSA_"), true);
   TEST_STRING_EQUAL(prot_in.getSearchEngine(), prot_ref.getSearchEngine());
@@ -607,11 +602,9 @@ START_SECTION(([EXTRA] consensusparquet_round_trip_ProteomicsLFQ_real_output))
   TEST_EQUAL(hist_ref.size(), 5);    // values 0..4 (one per spectra_data entry)
 
   // ---- PSM hit content fidelity (sequence/charge/score) ----
-  // Build (id_merge_index, RT, MZ, sequence, charge, score) tuples for unassigned
-  // PSMs (best hit only). RT/MZ make the tuple stable across order. The pid
-  // identifier is omitted because both lanes synthesize independently on load
-  // (IdXMLFile.cpp:530 parity); each lane is internally consistent (dangling
-  // checks above prove that) but the UniqueIdGenerator suffixes differ.
+  // Compare (id_merge_index, RT, MZ, sequence, charge, score) tuples — best hit
+  // only. The pid identifier is omitted (independent synth per lane); dangling
+  // checks above already verify per-lane internal consistency.
   using PSMSig = std::tuple<int, double, double, String, int, double>;
   auto psm_sigs = [](const auto& pids) {
     std::vector<PSMSig> sigs;
@@ -691,8 +684,7 @@ START_SECTION(([EXTRA] storeConsensusFeatures_loadConsensusFeatures_consensuspar
   TEST_EQUAL(cmap_in[0].getCharge(), 3);
   TEST_REAL_SIMILAR(cmap_in[0].getQuality(), 0.8f);
 
-  // ID sidecar round-trip — identifier is synthesized on load (IdXMLFile.cpp:530
-  // parity); pep_ids re-stamp in lock-step.
+  // ID sidecar: identifier synthesized on load (XML-lane parity); pep_id re-stamps.
   TEST_EQUAL(cmap_in.getProteinIdentifications().size(), 1);
   TEST_NOT_EQUAL(cmap_in.getProteinIdentifications()[0].getIdentifier(), "");
   TEST_NOT_EQUAL(cmap_in.getProteinIdentifications()[0].getIdentifier(), "run_1");

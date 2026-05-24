@@ -1437,23 +1437,22 @@ END_SECTION
 
 START_SECTION(static void checkUniqueIdentifiers(const std::vector<ProteinIdentification>&))
 {
-  // No duplicates -> no throw. (If the call throws, the test framework propagates it as a failure.)
+  // No duplicates -> no throw.
   vector<ProteinIdentification> ok(2);
   ok[0].setIdentifier("run_X");
   ok[1].setIdentifier("run_Y");
   ProteinIdentificationArrowIO::checkUniqueIdentifiers(ok);
-  TEST_TRUE(true)  // reached only if the call above didn't throw
+  TEST_TRUE(true)
 
-  // Duplicate identifiers -> throws Exception::InvalidValue with the canonical
-  // message text used by XMLHandler::checkUniqueIdentifiers_ — log-grepping
-  // "ProteinIdentification run identifiers are not unique" finds both lanes.
+  // Duplicate identifiers -> ParseError (XML-lane parity) carrying the canonical
+  // text XMLHandler::checkUniqueIdentifiers_ produces.
   vector<ProteinIdentification> dup(2);
   dup[0].setIdentifier("dup");
   dup[1].setIdentifier("dup");
   TEST_EXCEPTION_WITH_MESSAGE(
-    Exception::InvalidValue,
+    Exception::ParseError,
     ProteinIdentificationArrowIO::checkUniqueIdentifiers(dup),
-    "the value 'dup' was used but is not valid; ProteinIdentification run identifiers are not unique. This can lead to loss of unique PeptideIdentification assignment. Duplicated Protein-ID is:")
+    "ProteinIdentification run identifiers are not unique. This can lead to loss of unique PeptideIdentification assignment. Duplicated Protein-ID is:dup in: dup")
 }
 END_SECTION
 

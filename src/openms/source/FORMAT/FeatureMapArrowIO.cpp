@@ -452,10 +452,10 @@ namespace // anonymous
   }
 
   // ==================== MetaInfoInterface JSON helpers ====================
+  // Verbatim mirror of ConsensusMapArrowIO's helpers; TODO extract to
+  // ArrowIOHelpers once a 4th *ArrowIO user appears.
 
-  /// Serialize all MetaValues of a MetaInfoInterface to a JSON array string
-  /// (shape: `[{"name":..., "value":..., "type":...}, ...]`).
-  /// Mirrors ConsensusMapArrowIO::serializeMetaValues_ — kept in sync.
+  /// Serialize MetaValues to `[{"name":..., "value":..., "type":...}, ...]`.
   std::string serializeMetaValues_(const MetaInfoInterface& mii)
   {
     std::string json = "[";
@@ -486,11 +486,8 @@ namespace // anonymous
     return json;
   }
 
-  /// Deserialize a JSON array of {name, value, type} objects into a MetaInfoInterface.
-  /// Mirrors ConsensusMapArrowIO::deserializeMetaValues_. On malformed JSON, the
-  /// shape mismatch causes an early return with no meta-values restored (WARN-equivalent
-  /// is the parent caller's responsibility — here we follow the existing helper's
-  /// silent-skip pattern). Per-entry type mismatches fall back to the raw string value.
+  /// Inverse of serializeMetaValues_. Shape mismatch -> silent early return
+  /// (parent caller should WARN); per-entry type mismatch -> raw string fallback.
   void deserializeMetaValues_(const std::string& json, MetaInfoInterface& target)
   {
     if (json.empty()) return;
@@ -1210,8 +1207,7 @@ bool FeatureMapArrowIO::exportToParquet(
   const String& directory,
   const ParquetWriteConfig& config)
 {
-  // Mirror XMLHandler::checkUniqueIdentifiers_ — fail before any file is opened
-  // so we never leave a partial .featureparquet behind. Throws Exception::InvalidValue.
+  // XML-lane parity: reject duplicate ProtID identifiers before any Arrow allocation.
   ProteinIdentificationArrowIO::checkUniqueIdentifiers(feature_map.getProteinIdentifications());
 
   // 1. Create output directory
@@ -1233,10 +1229,8 @@ bool FeatureMapArrowIO::exportToParquet(
     return false;
   }
 
-  // Collect FeatureMap-level metadata (DocumentIdentifier + DataProcessing + MetaValues).
-  // The fmap_metavalues entry carries every FeatureMap-level MetaValue (notably
-  // `spectra_data`, set by FeatureMap::setPrimaryMSRunPath at FeatureMap.cpp:415).
-  // Mirrors the cmap_metavalues key in ConsensusMapArrowIO.cpp.
+  // fmap_metavalues carries the FeatureMap-level MetaValues (notably
+  // `spectra_data` from setPrimaryMSRunPath); mirrors cmap_metavalues.
   std::unordered_map<std::string, std::string> feature_map_metadata;
   feature_map_metadata["document_id"] = feature_map.getIdentifier();
   feature_map_metadata["loaded_file_path"] = feature_map.getLoadedFilePath();
@@ -1809,13 +1803,21 @@ bool FeatureMapArrowIO::importFromParquet(
       feature_map.setDataProcessing(deserializeDataProcessing_(schema_md->value(idx)));
     }
 
-    // FeatureMap-level MetaValues (e.g. `spectra_data` populated by setPrimaryMSRunPath).
-    // Missing key (pre-fix .featureparquet) → no meta-values restored, matching legacy
-    // behavior. Mirrors the cmap_metavalues handling in ConsensusMapArrowIO::importFromParquet.
+    // FeatureMap-level MetaValues (incl. `spectra_data` from setPrimaryMSRunPath).
+    // Missing key on pre-fix files restores nothing, matching legacy behavior.
     idx = schema_md->FindKey("fmap_metavalues");
     if (idx >= 0)
     {
-      deserializeMetaValues_(schema_md->value(idx), feature_map);
+      const std::string& raw = schema_md->value(idx);
+      deserializeMetaValues_(raw, feature_map);
+      std::vector<String> restored_keys;
+      feature_map.getKeys(restored_keys);
+      if (restored_keys.empty() && !raw.empty() && raw != "[]")
+      {
+        OPENMS_LOG_WARN << "FeatureMapArrowIO: fmap_metavalues present but decoded to "
+                        << "zero entries; JSON may be malformed: "
+                        << raw.substr(0, 200) << std::endl;
+      }
     }
   }
 
@@ -1832,14 +1834,11 @@ bool FeatureMapArrowIO::importFromParquet(
     return false;
   }
 
-  // 4. Synthesize fresh ProtID identifiers + apply rename to every pep_id collection
-  //    we own (per-feature + unassigned). Mirrors IdXMLFile.cpp:530 — the stored
-  //    identifier becomes informational; the in-memory identifier downstream sees
-  //    is freshly synthesized with a UniqueIdGenerator suffix.
+  // 4. XML-lane parity: re-stamp ProtIDs with synthesized identifiers and
+  //    apply the rename to per-feature and unassigned pep_id collections.
   {
-    auto& prot_ids = feature_map.getProteinIdentifications();
-    auto rename = ProteinIdentificationArrowIO::synthesizeRunIdentifiers(prot_ids);
-
+    auto rename = ProteinIdentificationArrowIO::synthesizeRunIdentifiers(
+        feature_map.getProteinIdentifications());
     for (auto& feature : feature_map)
     {
       ProteinIdentificationArrowIO::applyRunIdentifierRename(

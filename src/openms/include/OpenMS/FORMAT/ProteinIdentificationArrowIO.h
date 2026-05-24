@@ -214,56 +214,34 @@ public:
   // ==================== Identifier handling parity with XML lane ====================
 
   /**
-    @brief Synthesize fresh run identifiers per ProteinIdentification, mirroring IdXMLFile.
+    @brief Synthesize `<search_engine>_<date>_<UniqueIdGenerator>` identifiers
+           per ProtID, mirroring IdXMLFile.cpp:530.
 
-    Mirrors IdXMLFile.cpp:530: every load assigns each ProteinIdentification a fresh
-    identifier `<search_engine>_<date>_<UniqueIdGenerator>`. The stored identifier
-    on disk is informational; the in-memory identifier is regenerated. This is the
-    same defense FeatureXMLHandler / ConsensusXMLHandler / IdXMLFile apply on load
-    against downstream-collision-after-rip-and-merge scenarios.
+    Public-static (not private) so the 3 outer parquet load entry points
+    (PSMArrowIO / FeatureMapArrowIO / ConsensusMapArrowIO) can each invoke it
+    after their own table loads complete. Returns the stored->synthesized map
+    so callers can re-stamp every pep_id collection they own.
 
-    The function mutates @p protein_identifications in place and returns the map
-    { stored_id -> synthesized_id } so the caller can apply the same rename to
-    each PeptideIdentification collection it owns (FeatureMap has 2: per-feature
-    and unassigned; ConsensusMap has 2; PSMArrowIO has 1).
-
-    Edge cases:
-      - empty getSearchEngine() falls back to literal "unknown"
-      - invalid getDateTime() uses placeholder "1900-01-01T00:00:00"
-      - multiple ProtIDs sharing one stored identifier each receive their own
-        distinct synthesized identifier; the returned map collapses to the
-        last-seen entry. An OPENMS_LOG_WARN is emitted once per such collision.
-
-    @param[in,out] protein_identifications ProtID vector whose identifiers will be replaced
-    @return Map from each stored identifier to its synthesized replacement.
+    Edge cases: empty search engine -> "unknown"; invalid date -> "1900-01-01T00:00:00";
+    duplicate stored identifiers each get a distinct synth but the map collapses
+    to last-seen (one ProtID is orphaned, WARN logged).
   */
   static std::map<String, String> synthesizeRunIdentifiers(
     std::vector<ProteinIdentification>& protein_identifications);
 
-  /**
-    @brief Apply a stored->synthesized identifier rename to a PeptideIdentification collection.
-
-    PeptideIdentifications whose stored identifier isn't present in @p rename are
-    left untouched. Mirrors the orphan-pep_id semantics of the XML lane (where
-    pep_ids that don't match any ProtID retain their stale identifier).
-
-    @param[in] rename Map produced by synthesizeRunIdentifiers
-    @param[in,out] pep_ids PeptideIdentification collection to re-stamp
-  */
+  /// Apply a synthesizeRunIdentifiers rename map to @p pep_ids. Pep_ids whose
+  /// stored identifier isn't in the map are left untouched (matches XML lane).
   static void applyRunIdentifierRename(
     const std::map<String, String>& rename,
     PeptideIdentificationList& pep_ids);
 
   /**
-    @brief Reject a ProteinIdentification vector with duplicate identifiers (store-side check).
+    @brief Mirror of XMLHandler::checkUniqueIdentifiers_ — throws ParseError on duplicates.
 
-    Mirrors XMLHandler::checkUniqueIdentifiers_ — throws Exception::InvalidValue
-    with the same message text used by the XML lane's fatalError. Called by every
-    parquet store entry point before any Arrow builder is allocated, so no
-    partial file is created on rejection.
-
-    @param[in] protein_identifications ProtID vector to check
-    @throw Exception::InvalidValue when duplicate identifiers are present
+    Public-static for the same reason as synthesizeRunIdentifiers. Called before
+    any Arrow builder allocation in all 3 store entry points so a rejection
+    leaves no partial file on disk. ParseError matches the XML lane's exception
+    type and message text so log-grepping for the canonical text finds both lanes.
   */
   static void checkUniqueIdentifiers(
     const std::vector<ProteinIdentification>& protein_identifications);

@@ -728,9 +728,7 @@ START_SECTION(exportToParquet / importFromParquet - full round-trip)
 
   // --- Verify protein identifications ---
   TEST_EQUAL(imported.getProteinIdentifications().size(), 1)
-  // Identifier synthesized on load per IdXMLFile.cpp:530 parity — stored "run_full_1"
-  // becomes `<search_engine>_<date>_<UniqueIdGenerator>`. All pep_id collections
-  // (per-feature + unassigned) are re-stamped in lock-step.
+  // Identifier synthesized on load (XML-lane parity); all pep_id collections re-stamp.
   const String& fm_synth_id = imported.getProteinIdentifications()[0].getIdentifier();
   TEST_NOT_EQUAL(fm_synth_id, "")
   TEST_NOT_EQUAL(fm_synth_id, "run_full_1")
@@ -1104,24 +1102,19 @@ START_SECTION(exportToParquet / importFromParquet - FeatureMap-level MetaValue r
 {
   FeatureMap fm;
 
-  // setPrimaryMSRunPath stores its argument into the `spectra_data` meta-value
-  // on the FeatureMap itself (FeatureMap.cpp:415). This is the path that
-  // pre-fix FeatureMapArrowIO dropped on store.
+  // setPrimaryMSRunPath stashes the paths as a `spectra_data` meta-value on
+  // the FeatureMap itself (FeatureMap.cpp:415) — what pre-fix code dropped.
   fm.setPrimaryMSRunPath(StringList{"run_A.mzML", "run_B.mzML"});
-
-  // Plus a few scalar / typed meta-values to exercise the typed deserializer.
   fm.setMetaValue("custom_int", 1234);
   fm.setMetaValue("custom_double", 2.71828);
   fm.setMetaValue("custom_string", String("free-form text"));
   fm.setMetaValue("custom_int_list", DataValue(IntList{10, 20, 30}));
   fm.setMetaValue("custom_double_list", DataValue(DoubleList{1.5, 2.5}));
 
-  // Minimal ProteinIdentification so exportToParquet succeeds.
   ProteinIdentification prot_id;
   prot_id.setIdentifier("run_mv_test");
   fm.setProteinIdentifications({prot_id});
 
-  // One feature so the map is non-empty.
   Feature f;
   f.setRT(50.0);
   f.setMZ(400.0);
@@ -1139,20 +1132,17 @@ START_SECTION(exportToParquet / importFromParquet - FeatureMap-level MetaValue r
   FeatureMap imported;
   TEST_EQUAL(FeatureMapArrowIO::importFromParquet(tmp_dir, imported), true)
 
-  // Verify spectra_data round-trips and getPrimaryMSRunPath reads back the paths.
   StringList ms_runs;
   imported.getPrimaryMSRunPath(ms_runs);
   TEST_EQUAL(ms_runs.size(), 2)
   TEST_EQUAL(ms_runs[0], "run_A.mzML")
   TEST_EQUAL(ms_runs[1], "run_B.mzML")
 
-  // Verify scalar meta-values restore with the correct type.
   TEST_EQUAL(imported.metaValueExists("custom_int"), true)
   TEST_EQUAL(static_cast<int>(imported.getMetaValue("custom_int")), 1234)
   TEST_REAL_SIMILAR(static_cast<double>(imported.getMetaValue("custom_double")), 2.71828)
   TEST_EQUAL(String(imported.getMetaValue("custom_string")), "free-form text")
 
-  // List-typed meta-values restore as their original types.
   IntList out_il = imported.getMetaValue("custom_int_list");
   TEST_EQUAL(out_il.size(), 3)
   TEST_EQUAL(out_il[0], 10)
@@ -1165,10 +1155,10 @@ START_SECTION(exportToParquet / importFromParquet - FeatureMap-level MetaValue r
 END_SECTION
 
 /////////////////////////////////////////////////////////////
-// Fix #2b: exportToParquet rejects duplicate ProtID identifiers (XML-lane parity)
+// Fix #2b: exportToParquet rejects duplicate ProtID identifiers
 /////////////////////////////////////////////////////////////
 
-START_SECTION(exportToParquet - duplicate ProteinIdentification identifiers throw Exception::InvalidValue)
+START_SECTION(exportToParquet - duplicate ProteinIdentification identifiers throw Exception::ParseError)
 {
   FeatureMap fm;
 
@@ -1182,11 +1172,9 @@ START_SECTION(exportToParquet - duplicate ProteinIdentification identifiers thro
 
   String tmp_dir;
   NEW_TMP_FILE(tmp_dir)
-  tmp_dir += ".fmd";
+  tmp_dir += ".featureparquet";
 
-  // The store-side check fires before any Arrow builder is allocated, so no
-  // partial .featureparquet exists on disk after the throw.
-  TEST_EXCEPTION(Exception::InvalidValue,
+  TEST_EXCEPTION(Exception::ParseError,
                  FeatureMapArrowIO::exportToParquet(fm, tmp_dir))
 }
 END_SECTION

@@ -741,9 +741,7 @@ START_SECTION(exportToParquet / importFromParquet - full round-trip)
 
   // --- Verify protein identifications ---
   TEST_EQUAL(imported.getProteinIdentifications().size(), 1)
-  // Identifier synthesized on load per IdXMLFile.cpp:530 parity — stored "run_full_1"
-  // becomes `<search_engine>_<date>_<UniqueIdGenerator>`. All pep_id collections
-  // (per-consensus-feature + unassigned) are re-stamped in lock-step.
+  // Identifier synthesized on load (XML-lane parity); pep_id collections re-stamp.
   const String& cm_synth_id = imported.getProteinIdentifications()[0].getIdentifier();
   TEST_NOT_EQUAL(cm_synth_id, "")
   TEST_NOT_EQUAL(cm_synth_id, "run_full_1")
@@ -960,10 +958,10 @@ START_SECTION(exportToParquet / importFromParquet - ConsensusMap-level list-type
 END_SECTION
 
 /////////////////////////////////////////////////////////////
-// Fix #2b: exportToParquet rejects duplicate ProtID identifiers (XML-lane parity)
+// Fix #2b: exportToParquet rejects duplicate ProtID identifiers
 /////////////////////////////////////////////////////////////
 
-START_SECTION(exportToParquet - duplicate ProteinIdentification identifiers throw Exception::InvalidValue)
+START_SECTION(exportToParquet - duplicate ProteinIdentification identifiers throw Exception::ParseError)
 {
   ConsensusMap cmap;
 
@@ -977,9 +975,9 @@ START_SECTION(exportToParquet - duplicate ProteinIdentification identifiers thro
 
   String tmp_dir;
   NEW_TMP_FILE(tmp_dir)
-  tmp_dir += ".cmd";
+  tmp_dir += ".consensusparquet";
 
-  TEST_EXCEPTION(Exception::InvalidValue,
+  TEST_EXCEPTION(Exception::ParseError,
                  ConsensusMapArrowIO::exportToParquet(cmap, tmp_dir))
 }
 END_SECTION

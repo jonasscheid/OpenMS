@@ -225,19 +225,19 @@ add_test("TOPP_IDRipper_idparquet_diff_1"
 set_tests_properties("TOPP_IDRipper_idparquet_diff_1" PROPERTIES DEPENDS "TOPP_IDRipper_idparquet_convert_1")
 
 # IDRipper_4: Fix-#2a end-to-end. Input is a single merged .idparquet whose
-# stored run_identifier "TopPerc_test" the post-Percolator FFI->FLUKD chain
-# produces (memory: [[idparquet-quant-chain]] cause-2). IDRipper splits by
-# file_origin into 2 per-file .idparquet outputs that both carry the shared
-# stored identifier. IDMerger remerging them must produce 2 distinct
-# IdentificationRuns — only possible if loader-side synthesizeRunIdentifiers
-# (mirroring IdXMLFile.cpp:530) re-stamps each file's ProtID with a fresh
-# UniqueIdGenerator suffix. Without the fix, IDMerger would collapse to 1
-# IdentificationRun. Fixture regenerated via IDRipper_4_input_generate.py.
-file(MAKE_DIRECTORY ${TESTS_TEMP_DIR}/IDRipper_4_split)
+# 2 ProtIDs share the stored run_identifier "TopPerc_test" — the
+# post-Percolator FFI->FLUKD shape (see [[idparquet-quant-chain]]). After
+# IDRipper splits by file_origin and IDMerger remerges, the output must
+# contain 2 distinct IdentificationRuns — only possible if loader-side
+# synthesizeRunIdentifiers re-stamps each file's ProtID. Without the fix,
+# IDMerger would collapse to 1. Fixture: IDRipper_4_input_generate.py.
+add_test("TOPP_IDRipper_4_setup"
+  ${CMAKE_COMMAND} -E make_directory ${TESTS_TEMP_DIR}/IDRipper_4_split)
 add_test("TOPP_IDRipper_4_split"
   ${TOPP_BIN_PATH}/IDRipper -test
     -in ${DATA_DIR_TOPP}/IDRipper_4_input.idparquet
     -out ${TESTS_TEMP_DIR}/IDRipper_4_split)
+set_tests_properties("TOPP_IDRipper_4_split" PROPERTIES DEPENDS "TOPP_IDRipper_4_setup")
 add_test("TOPP_IDRipper_4_remerge"
   ${TOPP_BIN_PATH}/IDMerger -test
     -in ${TESTS_TEMP_DIR}/IDRipper_4_split/fileA.idparquet
@@ -249,10 +249,14 @@ add_test("TOPP_IDRipper_4_convert"
     -in ${TESTS_TEMP_DIR}/IDRipper_4_remerged.tmp.idparquet
     -out ${TESTS_TEMP_DIR}/IDRipper_4_remerged.tmp.idXML)
 set_tests_properties("TOPP_IDRipper_4_convert" PROPERTIES DEPENDS "TOPP_IDRipper_4_remerge")
-# Count IdentificationRun elements directly — synthesized identifiers carry a
-# non-deterministic UniqueIdGenerator suffix that can't byte-DIFF.
+# Synthesized identifiers carry a non-deterministic suffix — count
+# IdentificationRun tags via a portable cmake -P helper instead of byte-DIFF.
 add_test("TOPP_IDRipper_4_assert"
-  bash -c "test $(grep -c '<IdentificationRun' ${TESTS_TEMP_DIR}/IDRipper_4_remerged.tmp.idXML) -eq 2")
+  ${CMAKE_COMMAND}
+    -DFILE=${TESTS_TEMP_DIR}/IDRipper_4_remerged.tmp.idXML
+    -DPATTERN=<IdentificationRun
+    -DEXPECTED=2
+    -P ${OPENMS_HOST_DIRECTORY}/cmake/CountLinesMatching.cmake)
 set_tests_properties("TOPP_IDRipper_4_assert" PROPERTIES DEPENDS "TOPP_IDRipper_4_convert")
 
 #------------------------------------------------------------------------------
